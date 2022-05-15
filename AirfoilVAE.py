@@ -26,7 +26,8 @@ class AirfoilVAE(nn.Module):
         
         if hidden_dims is None:
             hidden_dims = [128, 64, 32]
-            
+        self.name = f'VAE_MLP{hidden_dims[0]}_{in_channels}_{latent_dim}'
+          
         # Build Encoder
         modules = []
         modules.append(nn.Linear(in_channels, hidden_dims[0]))
