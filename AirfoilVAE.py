@@ -23,6 +23,7 @@ class AirfoilVAE(nn.Module):
                  **kwargs):
         super(AirfoilVAE, self).__init__()
         self.latent_dim = latent_dim
+        self.in_channels = in_channels
         
         if hidden_dims is None:
             hidden_dims = [128, 64, 32]
@@ -36,7 +37,7 @@ class AirfoilVAE(nn.Module):
             modules.append(
                 nn.Sequential(
                     nn.Linear(hidden_dims[i], hidden_dims[i+1]),
-                    act_function)
+                    act_function) 
             )        
         self.encoder = nn.Sequential(*modules)
         
@@ -115,24 +116,27 @@ class AirfoilVAE(nn.Module):
         
         recon_loss =F.mse_loss(recons, input)
 
-        kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1))
+        kl_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1))
         weight = kwargs['weight']
         
-        loss = recon_loss + weight*kld_loss
-        return {'loss': loss, 'Reconstruction_Loss':recon_loss.detach(), 'KLD':-kld_loss.detach()}
+        loss = recon_loss + weight*kl_loss
+        return {'loss': loss, 'recon_loss':recon_loss.detach(), 'kl_loss':-kl_loss.detach()}
 
     def sample(self,
                num_samples,
-               current_device, **kwargs):
+               current_device,
+               std_coef = 1.0,
+               **kwargs):
         """
         Samples from the latent space and return the corresponding
-        coordinate space map.
+        image space map.
         :param num_samples: (Int) Number of samples
         :param current_device: (Int) Device to run the model
         :return: (Tensor)
         """
-        z = torch.randn(num_samples,
-                        self.latent_dim)
+        mean = torch.zeros(num_samples, self.latent_dim)
+        std = torch.ones(num_samples, self.latent_dim)*std_coef
+        z = torch.normal(mean, std)
 
         z = z.to(current_device)
 

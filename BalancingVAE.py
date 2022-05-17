@@ -30,7 +30,7 @@ class BalancingVAE(nn.Module):
             hidden_dims = [128, 64, 32]
             
         self.name = f'BVAE_MLP{hidden_dims[0]}_{in_channels}_{latent_dim}'
-          
+        
         # Build Encoder
         modules = []
         modules.append(nn.Linear(in_channels, hidden_dims[0]))
@@ -119,17 +119,18 @@ class BalancingVAE(nn.Module):
         weight = kwargs['weight']
         HALF_LOG_TWO_PI = 0.91893
         
-        k = (2*self.in_channels/self.latent_dim)**2
-        kl_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1))
-        gen_loss = torch.mean(torch.square((recons - input) / self.gamma) / 2.0 + torch.log(self.gamma) + HALF_LOG_TWO_PI)
-        loss = weight*kl_loss + gen_loss
+        kl_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1)) * self.gamma
+        # gen_loss = torch.mean(torch.square((recons - input) / self.gamma) / 2.0 + torch.log(self.gamma) + HALF_LOG_TWO_PI)
+        gen_loss = torch.mean(torch.square((recons - input) / self.gamma) / 2.0)
+
+        loss = gen_loss + weight*kl_loss
         
         # Update gamma
         bmse_loss = F.mse_loss(recons, input)             # Minibatch mean squared error
         self.mse_loss = torch.min(torch.Tensor([self.mse_loss, self.mse_loss*0.99 + bmse_loss*0.01]))
         self.gamma = torch.sqrt(self.mse_loss)
         
-        return {'loss': loss, 'mse_loss':self.mse_loss.detach(), 'kl_loss':-kl_loss.detach()}
+        return {'loss': loss, 'recon_loss': gen_loss.detach(), 'kl_loss': kl_loss.detach(), 'mse_loss': bmse_loss.detach()}
     
     def initialize_gamma(self,
                          input,
@@ -145,7 +146,9 @@ class BalancingVAE(nn.Module):
     
     def sample(self,
                num_samples,
-               current_device, **kwargs):
+               current_device,
+               std_coef = 1.0,
+               **kwargs):
         """
         Samples from the latent space and return the corresponding
         coordinate space map.
@@ -153,8 +156,9 @@ class BalancingVAE(nn.Module):
         :param current_device: (Int) Device to run the model
         :return: (Tensor)
         """
-        z = torch.randn(num_samples,
-                        self.latent_dim)
+        mean = torch.zeros(num_samples, self.latent_dim)
+        std = torch.ones(num_samples, self.latent_dim)*std_coef
+        z = torch.normal(mean, std)
 
         z = z.to(current_device)
 
