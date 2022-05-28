@@ -139,6 +139,5 @@ class AirfoilVAE(nn.Module):
         z = torch.normal(mean, std)
 
         z = z.to(current_device)
-
         samples = self.decode(z)
         return samples
