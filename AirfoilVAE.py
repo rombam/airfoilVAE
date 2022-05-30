@@ -94,6 +94,9 @@ class AirfoilVAE(nn.Module):
         return decoded
 
     def forward(self, input, **kwargs):
+        """
+        Forward pass through the network.
+        """
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
         return  [self.decode(z), input, mu, log_var]
