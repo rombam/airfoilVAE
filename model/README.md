@@ -1,21 +1,11 @@
-# AirfoilVAE
- Pytorch implementation of an airfoil generator via a __Variational Autoencoder__.  
- Developed in order to use as a sampler/generator for airfoil shape aeroacoustic optimization problems.  
+# Generator script
 
- ## Contents
- The root of the repository contains three Jupyter notebooks.  
- 
- - __AirfoilVAE.ipynb__: for general purpose exploration of network architectures and parameters, sampling and plotting airfoils.
- - __AirfoilVAE_hyperOpt.ipynb__: used for optimizing the network's architecture using Bayesian optimization (TPE + HyperBand) through the Optuna package.
- - __AirfoilVAE_opt.ipynb__: used to train the final model with the parameters from the hyperparameter optimization.
+Airfoil shapes can be generated using the optimized model through the *vae_generator.py* script.  
+Python package requirements can be found in *requirements.txt*.  
 
-Data can be found in __./data/__ and the final script that allows sampling of aifoils through external modification of the latent variables is in __./model/vae_generator.py__.  
-Folder __./archive/__ contains test network architectures, previously trained models and other files.  
+## Usage
+1) Modify *input_latent.dat* with 4 values corresponding to the 4 latent variables of the model. These can be modified freely, but one must take into account that the bigger the absolute value of the latent variables, the less coherent the airfoils will tend to be. Good starting points are values between -2 and 2 approximately, with smaller values being more conservative and bigger values stretching the possibilities of the generator.
+2) Run *vae_generator.py*. This will generate a file called *output_airfoil.dat* that contains 201 chord-normalized x-y coordinate pairs with cosine spacing in the x axis for the target airfoil.  
 
-## Acknowledgements
-This work draws heavily from:  
-
-- *Pytorch VAE* - https://github.com/AntixK/PyTorch-VAE  
-- Kingma, D., Welling, M. *Auto-Encoding Variational Bayes* - https://arxiv.org/abs/1312.6114
-- Asperti, A., Trentin, M. *Balancing reconstruction error and Kullback-Leibler divergence in Variational Autoencoders* - https://arxiv.org/abs/2002.07514
+Model parameters can be changed inside *./params/model_parameters.json*. However, this will prompt the generator script to look for a different model checkpoint inside *./model/*, which will not be trained. In order to use it, it must be trained and placed in this folder beforehand. *Scaler_dict.py* contains the bounds of the original dataset scaler, since the network itself outputs normalized values that have to be de-normalized. Do not modify.
 
