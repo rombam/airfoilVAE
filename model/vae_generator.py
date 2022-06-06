@@ -192,6 +192,45 @@ def decode_latent(z, model, device):
     print('Decoding latent variables...')
     return decoded_airfoil
 
+def encode_latent(x, model, device):
+    """
+    Decodes the input latent variables and returns airfoil coordinates in numpy format.
+    Inputs:
+    - z: numpy array containing latent variables to decode
+    - model: Pytorch model to use for decoding
+    Outputs:
+    - decoded_airfoil: numpy array of decoded airfoil coordinates
+    """
+    # Decode the latent variables
+    airfoil = []
+    airfoil.extend(x[1:100])
+    airfoil.extend(x[101:200])
+    
+    x_input = torch.Tensor(np.array(airfoil).reshape(1, -1)).to(device)
+    latent_mu = model.encode(x_input[0])[0].detach().cpu().numpy()
+    latent_std = model.encode(x_input[0])[1].detach().cpu().numpy()
+    print('Encoding airfoil...')
+    return [latent_mu, latent_std]
+
+def normalize(data):
+    """
+    Denormalizes numpy array data using a pre-fitted scaler saved in scaler_dict.json as a dictionary.
+    Inputs:
+        - data: data to be normalized. [np.array]
+    Outputs:
+        - normalized data. [np.array]
+    """
+    
+    with open('./params/scaler_dict.json', 'r') as fp:
+        scaler_bounds = json.load(fp)   
+    idx = 0
+    data_norm = data
+
+    for key in scaler_bounds.keys():
+        data_norm[idx] = (data[idx] - scaler_bounds[key]['min']) / (scaler_bounds[key]['max'] - scaler_bounds[key]['min'])
+        idx += 1
+    return data_norm
+
 def denormalize(data):
     """
     Denormalizes numpy array data using a pre-fitted scaler saved in scaler_dict.json as a dictionary.
@@ -214,7 +253,7 @@ def read_latent(filename):
     """
     Reads an airfoil's latent variables from a .dat file.
     Inputs:
-    - filename: string of the filename to read the airfoil from
+    - filename: string of the filename to read the airfoil latent variables from
     Outputs:    
     - latent: numpy array with the latent variables
     """
@@ -222,6 +261,20 @@ def read_latent(filename):
         print(f'Reading airfoil from: {filename}')
         latent = np.loadtxt(datfile, unpack = True)
     return latent
+
+def read_airfoil(filename):
+    """
+    Read an airfoil coordinates from a .dat file.
+    Inputs:
+    - filename: string of the filename to read the airfoil from
+    Outputs:    
+    - airfoil: numpy array with the airfoil coordinates [np.array]
+    """
+    with open(filename, 'r') as datfile:
+        print(f'Reading airfoil coordinates from: {filename}')
+        airfoil = np.loadtxt(datfile, unpack = True)
+    print(airfoil)
+    return airfoil[1]
 
 def save_airfoil(airfoil, filename, n_points = 198):
     """
@@ -251,7 +304,7 @@ def save_airfoil(airfoil, filename, n_points = 198):
     
     with open(filename, 'w', newline='') as datfile:
         for i in range(len(x)):
-            print(f'{x[i]:.8f} {y[i]:.8f}', file=datfile)
+            print(f'{x[i]:.8E} {y[i]:.8E}', file=datfile)
     
     print('Airfoil saved successfully!')
     
@@ -268,10 +321,26 @@ if __name__ == '__main__':
     print(parameters)
     model = load_model(parameters)
 
-    # Decode and transform the input latent variables
-    latent_airfoil = read_latent('input_latent.dat')
-    latent_tensor = torch.Tensor(latent_airfoil)
+    # --- Encode airfoil and save latent variables and reconstructed airfoil ---
+    airfoil_shape = read_airfoil('shape_optim.dat')
+    airfoil_shape = normalize(airfoil_shape)
+    airfoil_latent = encode_latent(airfoil_shape, model, parameters['device'])
+    print(airfoil_latent)
+    # Save latent variable
+    with open('optim_latent.dat', 'w', newline='') as datfile:
+        for i in range(len(airfoil_latent[0])):
+            print(f'{airfoil_latent[0][i]:.8E}', file=datfile)
+    
+    latent_tensor = torch.Tensor(airfoil_latent[0])
     airfoil_coords = decode_latent(latent_tensor, model, device = parameters['device'])
-    save_airfoil(airfoil_coords, 'output_airfoil.dat')
+    save_airfoil(airfoil_coords, 'output_airfoil_optim.dat')
     print(f'Elapsed time: {np.round(time.time() - start_time, 4)} s')
+
+
+    # Decode and transform the input latent variables
+    # latent_airfoil = read_latent('input_latent.dat')
+    # latent_tensor = torch.Tensor(latent_airfoil)
+    # airfoil_coords = decode_latent(latent_tensor, model, device = parameters['device'])
+    # save_airfoil(airfoil_coords, 'output_airfoil.dat')
+    # print(f'Elapsed time: {np.round(time.time() - start_time, 4)} s')
     
