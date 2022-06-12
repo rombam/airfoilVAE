@@ -5,6 +5,7 @@ import torch
 from model.model_utils import load_model, decode_latent
 from utils.io import read_latent, save_airfoil
 from utils.scale import denormalize
+from utils.filter import smoothen
 
 print('--- VAE Airfoil Generator ---\n')
 
@@ -24,7 +25,8 @@ model = load_model(parameters)
 latent_airfoil = torch.Tensor(read_latent('input_latent.dat'))
 airfoil_coords = decode_latent(latent_airfoil, model, device = parameters['device'])
 airfoil_denorm = denormalize(airfoil_coords, scaler_bounds)
-save_airfoil(airfoil_denorm, 'output_airfoil.dat')
+airfoil_smooth = smoothen(airfoil_denorm, window_length=15, polyorder=3)
+save_airfoil(airfoil_smooth, 'output_airfoil.dat')
 
 print(f'Elapsed time: {np.round(time.time() - start_time, 4)} s')
     
