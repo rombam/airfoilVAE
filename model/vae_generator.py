@@ -7,6 +7,10 @@ from utils.io import read_latent, save_airfoil
 from utils.scale import denormalize
 from utils.filter import smoothen
 
+# without this will show error: OMP: Error #15: Initializing libiomp5md.dll, but found libiomp5md.dll already initialized.
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
 print('--- VAE Airfoil Generator ---\n')
 
 # Load input parameters and model
