@@ -25,8 +25,11 @@ model = load_model(parameters)
 latent_airfoil = torch.Tensor(read_latent('input_latent.dat'))
 airfoil_coords = decode_latent(latent_airfoil, model, device = parameters['device'])
 airfoil_denorm = denormalize(airfoil_coords, scaler_bounds)
-airfoil_smooth = smoothen(airfoil_denorm, window_length=15, polyorder=3)
-save_airfoil(airfoil_smooth, 'output_airfoil.dat')
+# Single-pass smoothing filter
+airfoil_smooth = smoothen(airfoil_denorm, window_length=15, polyorder=2)
+save_airfoil(airfoil_denorm, 'C:/SU2_7.3.1/PyAero-master/data/Airfoils/output_vae/output_airfoil.dat')
+save_airfoil(airfoil_denorm, 'C:/TFM/repos/airfoilVAE/xfoil/output_airfoil.dat')
+save_airfoil(airfoil_denorm, 'output_airfoil.dat')
 
 print(f'Elapsed time: {np.round(time.time() - start_time, 4)} s')
     
