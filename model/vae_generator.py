@@ -23,7 +23,7 @@ model = load_model(parameters)
 
 # Decode and transform the input latent variables
 latent_airfoil = torch.Tensor(read_latent('input_latent.dat'))
-airfoil_coords = decode_latent(latent_airfoil, model, device = parameters['device'])
+airfoil_coords = decode_latent(latent_airfoil, model, device=parameters['device'])
 airfoil_denorm = denormalize(airfoil_coords, scaler_bounds)
 # Single-pass smoothing filter
 airfoil_smooth = smoothen(airfoil_denorm, window_length=15, polyorder=2)

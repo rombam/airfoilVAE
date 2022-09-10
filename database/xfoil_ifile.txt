@@ -1,0 +1,29 @@
+PLOP
+G F
+
+load shape.dat
+new
+pane
+
+
+oper
+visc
+3.73333e+06
+mach 0.162615
+iter 300
+vpar
+N 9.0046
+
+vpar
+xtr
+0.06
+0.06
+
+pacc
+POLAR_OUTPUT
+doesntmatter
+alfa 3
+cpwr  XFOIL_CP_Output
+DUMP XFOIL_Output
+
+quit
